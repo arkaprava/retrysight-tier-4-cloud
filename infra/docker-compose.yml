@@ -1,0 +1,126 @@
+services:
+  postgres:
+    build:
+      context: ./postgres
+    image: agent-retry/postgres:local
+    container_name: agent-retry-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-agent_retry}
+      POSTGRES_USER: ${POSTGRES_USER:-agent_retry}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agent_retry}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - agent_retry_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  manager:
+    build:
+      context: ..
+      dockerfile: infra/manager/Dockerfile
+    image: agent-retry/manager:local
+    container_name: agent-retry-manager
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      MANAGER_PORT: ${MANAGER_PORT:-28477}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-agent_retry}
+      POSTGRES_USER: ${POSTGRES_USER:-agent_retry}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agent_retry}
+      JWT_SECRET: ${JWT_SECRET:-agent-retry-platform-dev-secret-key-32chars}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:80,http://localhost:5173,http://localhost:8080,http://127.0.0.1:8080}
+      SECADMIN_EMAIL: ${SECADMIN_EMAIL:-secadmin@local}
+      SECADMIN_PASSWORD: ${SECADMIN_PASSWORD:-changeme}
+      SSO_SECRET_KEY: ${SSO_SECRET_KEY:-dev-sso-secret-encryption-key-32}
+      SSO_CALLBACK_BASE_URL: ${SSO_CALLBACK_BASE_URL:-http://localhost:8080}
+      SSO_MANAGER_BASE_URL: ${SSO_MANAGER_BASE_URL:-http://localhost:${MANAGER_PORT:-28477}}
+      AGENT_API_KEY: ${AGENT_API_KEY:-dev-agent-key}
+      SECURITY_ALLOW_DEFAULT_SECRETS: ${SECURITY_ALLOW_DEFAULT_SECRETS:-true}
+      CLICKHOUSE_ENABLED: ${CLICKHOUSE_ENABLED:-false}
+      CLICKHOUSE_READ_ENABLED: ${CLICKHOUSE_READ_ENABLED:-true}
+      CLICKHOUSE_URL: ${CLICKHOUSE_URL:-http://clickhouse:8123}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE:-agent_retry}
+    ports:
+      - "${MANAGER_PORT:-28477}:${MANAGER_PORT:-28477}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:${MANAGER_PORT:-28477}/api/v1/auth/sso/status >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: infra/frontend/Dockerfile
+    image: agent-retry/frontend:local
+    container_name: agent-retry-frontend
+    environment:
+      MANAGER_PORT: ${MANAGER_PORT:-28477}
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      manager:
+        condition: service_healthy
+
+  agent:
+    build:
+      context: ..
+      dockerfile: infra/agent/Dockerfile
+    image: agent-retry/agent:local
+    container_name: agent-retry-agent
+    profiles:
+      - agent
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      MANAGER_PORT: ${MANAGER_PORT:-28477}
+      AGENT_MANAGER_URL: ${AGENT_MANAGER_URL:-http://manager:${MANAGER_PORT:-28477}}
+      AGENT_MANAGER_API_KEY: ${AGENT_API_KEY:-dev-agent-key}
+    volumes:
+      - ${HOME}/.cursor:/home/collector/.cursor:ro
+      - ${HOME}/.claude:/home/collector/.claude:ro
+      - ${HOME}/.codex:/home/collector/.codex:ro
+      - agent_retry_buffer:/home/collector/.agent-retry
+    depends_on:
+      manager:
+        condition: service_healthy
+
+  # Optional analytics warehouse — enable with: docker compose --profile analytics up -d
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: agent-retry-clickhouse
+    profiles:
+      - analytics
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DATABASE:-agent_retry}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-9000}:9000"
+    volumes:
+      - agent_retry_chdata:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8123/ping | grep -q Ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  agent_retry_pgdata:
+  agent_retry_buffer:
+  agent_retry_chdata:

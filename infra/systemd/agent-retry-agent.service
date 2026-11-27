@@ -1,0 +1,17 @@
+[Unit]
+Description=RetrySight Collector Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=%h/.retrysight-agent
+Environment=SPRING_PROFILES_ACTIVE=tier-core
+Environment=JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+ExecStart=/usr/bin/java -jar %h/.retrysight-agent/agent-app.jar
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

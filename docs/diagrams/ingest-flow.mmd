@@ -1,0 +1,17 @@
+sequenceDiagram
+  participant C as Collector agent
+  participant B as SQLite buffer
+  participant M as Manager ingest API
+  participant D as PostgreSQL
+  participant U as UI subscribers
+
+  C->>C: Watch log paths / parse events
+  C->>B: Persist batch (offline-safe)
+  loop Every ~10s
+    C->>M: POST /ingest/batch + heartbeat
+    M->>M: Validate API key & agent identity
+    M->>M: Verify task ownership
+    M->>D: Upsert tasks, events, tokens
+    M-->>C: accepted / skipped / errors
+  end
+  M-->>U: GraphQL subscription taskUpdated

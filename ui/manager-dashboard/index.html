@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-name" content="retrysight-rocket-monitor" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" type="image/svg+xml" href="/retrysight-logo.svg" />
+    <link rel="icon" type="image/png" href="/retrysight-logo.png" />
+    <title>RetrySight</title>
+    <script>
+      (function () {
+        var key = 'ui-theme'
+        var valid = ['monitor', 'monitor-light', 'high-contrast', 'auto']
+        var legacy = {
+          light: 'monitor-light',
+          dark: 'monitor',
+          fortify: 'monitor',
+          'fortify-dark': 'monitor',
+          tailadmin: 'monitor',
+          'tailadmin-dark': 'monitor',
+        }
+        var defaultTheme = 'auto'
+        var theme = localStorage.getItem(key)
+        if (legacy[theme]) {
+          theme = legacy[theme]
+        }
+        if (valid.indexOf(theme) === -1) {
+          theme = defaultTheme
+        }
+        var resolved = theme
+        if (theme === 'auto') {
+          resolved = window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'monitor'
+            : 'monitor-light'
+        }
+        document.documentElement.setAttribute('data-theme', resolved)
+        document.documentElement.setAttribute('data-theme-preference', theme)
+      })()
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

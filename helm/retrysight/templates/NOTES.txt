@@ -1,0 +1,25 @@
+RetrySight {{ .Values.tier.slug }} has been deployed.
+
+Release: {{ .Release.Name }}
+Version: {{ .Chart.AppVersion }}
+
+{{- if .Values.ingress.enabled }}
+
+Dashboard: http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.host }}/
+Manager API: http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.host }}/api/v1/
+{{- else }}
+
+Port-forward the dashboard:
+  kubectl port-forward svc/{{ include "retrysight.fullname" . }}-frontend {{ .Values.frontend.port }}:{{ .Values.frontend.port }}
+
+Port-forward the manager API:
+  kubectl port-forward svc/{{ include "retrysight.fullname" . }}-manager {{ .Values.manager.port }}:{{ .Values.manager.port }}
+{{- end }}
+
+Install the desktop agent from release artifacts (Windows .msi, Linux .deb, macOS .pkg).
+
+Generated credentials (kept across upgrades) are in Secret {{ include "retrysight.fullname" . }}-secrets:
+  Admin login ({{ .Values.manager.secadminEmail | default "secadmin@local" }}):
+    kubectl get secret {{ include "retrysight.fullname" . }}-secrets -n {{ .Release.Namespace }} -o jsonpath='{.data.secadmin-password}' | base64 -d; echo
+  Agent API key:
+    kubectl get secret {{ include "retrysight.fullname" . }}-secrets -n {{ .Release.Namespace }} -o jsonpath='{.data.agent-api-key}' | base64 -d; echo

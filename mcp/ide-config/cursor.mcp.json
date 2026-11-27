@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "agent-performance": {
+      "command": "node",
+      "args": ["ABSOLUTE_PATH/agent-retry-platform/mcp/packages/mcp-server/dist/index.js"],
+      "env": {
+        "MANAGER_URL": "http://localhost:28477",
+        "APM_EMAIL": "secadmin@local",
+        "APM_PASSWORD": "changeme"
+      }
+    }
+  }
+}

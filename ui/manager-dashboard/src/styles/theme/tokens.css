@@ -1,0 +1,234 @@
+/*
+ * Copyright (c) 2026 Arka Prava Ghosh
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* RetrySight — Rocket Monitor theme (glassmorphic infrastructure cockpit) */
+
+:root,
+[data-theme='monitor'] {
+  --bg-app: #0b0f19;
+  --bg-primary: #0b0f19;
+  --bg-secondary: rgba(255, 255, 255, 0.04);
+  --bg-tertiary: rgba(255, 255, 255, 0.06);
+  --bg-elevated: rgba(255, 255, 255, 0.08);
+  --bg-hover: rgba(167, 139, 250, 0.12);
+  --bg-inset: rgba(0, 0, 0, 0.32);
+
+  --text-primary: #e8ecf4;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-data: #f1f5f9;
+  --text-heading: #f8fafc;
+
+  --accent: #5bcff0;
+  --accent-secondary: #a78bfa;
+  --accent-muted: #8bdbf0;
+  --accent-subtle: rgba(91, 207, 240, 0.12);
+  --accent-glow: rgba(91, 207, 240, 0.35);
+
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(91, 207, 240, 0.28);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --nav-active-border: rgba(91, 207, 240, 0.35);
+
+  --gradient-accent: linear-gradient(135deg, #5bcff0 0%, #7dd3fc 100%);
+  --gradient-subtle: linear-gradient(135deg, rgba(91, 207, 240, 0.14) 0%, rgba(167, 139, 250, 0.08) 100%);
+  --gradient-mesh:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(91, 207, 240, 0.14), transparent),
+    radial-gradient(ellipse 55% 45% at 100% 0%, rgba(167, 139, 250, 0.1), transparent),
+    radial-gradient(ellipse 40% 35% at 0% 100%, rgba(91, 207, 240, 0.06), transparent);
+
+  --glass-blur: 12px;
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.06);
+
+  --success: #34d399;
+  --success-bg: rgba(52, 211, 153, 0.12);
+  --info: #38bdf8;
+  --info-bg: rgba(56, 189, 248, 0.12);
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.14);
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.12);
+  --neutral-bg: rgba(148, 163, 184, 0.14);
+
+  --severity-critical: #f87171;
+  --severity-critical-bg: rgba(248, 113, 113, 0.14);
+  --severity-high: #fb923c;
+  --severity-high-bg: rgba(251, 146, 60, 0.14);
+  --severity-medium: #fbbf24;
+  --severity-medium-bg: rgba(251, 191, 36, 0.14);
+  --severity-low: #a78bfa;
+  --severity-low-bg: rgba(167, 139, 250, 0.14);
+  --severity-info: #5bcff0;
+  --severity-info-bg: rgba(91, 207, 240, 0.12);
+
+  --chart-1: #5bcff0;
+  --chart-2: #a78bfa;
+  --chart-3: #34d399;
+  --chart-4: #fbbf24;
+  --chart-5: #f472b6;
+  --chart-6: #38bdf8;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 28px rgba(91, 207, 240, 0.22);
+
+  --font-brand: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+
+  --sidebar-width: 260px;
+  --transition: 150ms ease;
+}
+
+[data-theme='monitor-light'] {
+  --bg-app: #eef2f8;
+  --bg-primary: #eef2f8;
+  --bg-secondary: rgba(255, 255, 255, 0.72);
+  --bg-tertiary: rgba(255, 255, 255, 0.88);
+  --bg-elevated: #ffffff;
+  --bg-hover: rgba(167, 139, 250, 0.1);
+  --bg-inset: rgba(11, 15, 25, 0.04);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-data: #1e293b;
+  --text-heading: #0b0f19;
+
+  --accent: #0e9eb0;
+  --accent-secondary: #7c3aed;
+  --accent-muted: #2cb5c4;
+  --accent-subtle: rgba(14, 158, 176, 0.1);
+  --accent-glow: rgba(14, 158, 176, 0.2);
+
+  --border-color: rgba(11, 15, 25, 0.08);
+  --border-hover: rgba(14, 158, 176, 0.28);
+  --border-subtle: rgba(11, 15, 25, 0.05);
+  --nav-active-border: rgba(14, 158, 176, 0.25);
+
+  --gradient-accent: linear-gradient(135deg, #2cb5c4 0%, #0e9eb0 100%);
+  --gradient-subtle: linear-gradient(135deg, rgba(44, 181, 196, 0.1) 0%, rgba(124, 58, 237, 0.06) 100%);
+  --gradient-mesh:
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(44, 181, 196, 0.12), transparent),
+    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(124, 58, 237, 0.06), transparent);
+
+  --glass-blur: 12px;
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(11, 15, 25, 0.08);
+
+  --success: #059669;
+  --success-bg: rgba(5, 150, 105, 0.1);
+  --info: #0284c7;
+  --info-bg: rgba(2, 132, 199, 0.1);
+  --warning: #d97706;
+  --warning-bg: rgba(217, 119, 6, 0.1);
+  --danger: #dc2626;
+  --danger-bg: rgba(220, 38, 38, 0.1);
+  --neutral-bg: rgba(100, 116, 139, 0.1);
+
+  --severity-critical: #dc2626;
+  --severity-critical-bg: rgba(220, 38, 38, 0.1);
+  --severity-high: #ea580c;
+  --severity-high-bg: rgba(234, 88, 12, 0.1);
+  --severity-medium: #d97706;
+  --severity-medium-bg: rgba(217, 119, 6, 0.1);
+  --severity-low: #7c3aed;
+  --severity-low-bg: rgba(124, 58, 237, 0.1);
+  --severity-info: #0e9eb0;
+  --severity-info-bg: rgba(14, 158, 176, 0.1);
+
+  --chart-1: #0e9eb0;
+  --chart-2: #7c3aed;
+  --chart-3: #059669;
+  --chart-4: #d97706;
+  --chart-5: #db2777;
+  --chart-6: #0284c7;
+
+  --shadow-sm: 0 1px 2px rgba(11, 15, 25, 0.06);
+  --shadow-md: 0 4px 16px rgba(11, 15, 25, 0.08);
+  --shadow-lg: 0 12px 32px rgba(11, 15, 25, 0.1);
+  --shadow-glow: 0 0 24px rgba(14, 158, 176, 0.14);
+}
+
+[data-theme='high-contrast'] {
+  --bg-app: #000000;
+  --bg-primary: #000000;
+  --bg-secondary: #000000;
+  --bg-tertiary: #1a1a1a;
+  --bg-elevated: #000000;
+  --bg-hover: #333333;
+  --bg-inset: #0a0a0a;
+
+  --text-primary: #ffffff;
+  --text-secondary: #ffffff;
+  --text-muted: #e0e0e0;
+  --text-data: #ffffff;
+  --text-heading: #5bcff0;
+
+  --accent: #5bcff0;
+  --accent-secondary: #a78bfa;
+  --accent-muted: #8bdbf0;
+  --accent-subtle: rgba(91, 207, 240, 0.25);
+  --accent-glow: rgba(91, 207, 240, 0.45);
+
+  --border-color: #ffffff;
+  --border-hover: #5bcff0;
+  --border-subtle: rgba(255, 255, 255, 0.15);
+  --nav-active-border: #5bcff0;
+
+  --gradient-accent: linear-gradient(135deg, #5bcff0 0%, #a78bfa 100%);
+  --gradient-subtle: linear-gradient(135deg, rgba(91, 207, 240, 0.18) 0%, rgba(167, 139, 250, 0.12) 100%);
+  --gradient-mesh: none;
+
+  --glass-blur: 0;
+  --glass-bg: #000000;
+  --glass-border: #ffffff;
+
+  --success: #4ade80;
+  --success-bg: rgba(74, 222, 128, 0.15);
+  --info: #5bcff0;
+  --info-bg: rgba(91, 207, 240, 0.15);
+  --warning: #facc15;
+  --warning-bg: rgba(250, 204, 21, 0.15);
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.15);
+  --neutral-bg: rgba(255, 255, 255, 0.15);
+
+  --severity-critical: #f87171;
+  --severity-critical-bg: rgba(248, 113, 113, 0.2);
+  --severity-high: #fb923c;
+  --severity-high-bg: rgba(251, 146, 60, 0.2);
+  --severity-medium: #facc15;
+  --severity-medium-bg: rgba(250, 204, 21, 0.2);
+  --severity-low: #a78bfa;
+  --severity-low-bg: rgba(167, 139, 250, 0.2);
+  --severity-info: #5bcff0;
+  --severity-info-bg: rgba(91, 207, 240, 0.2);
+
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-glow: none;
+}
+
+[data-theme='monitor'] .login-page,
+[data-theme='monitor-light'] .login-page,
+[data-theme='high-contrast'] .login-page {
+  background:
+    var(--gradient-mesh),
+    var(--bg-primary);
+}

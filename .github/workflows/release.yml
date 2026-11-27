@@ -1,0 +1,297 @@
+# Copyright (c) 2026 Arka Prava Ghosh
+# SPDX-License-Identifier: Apache-2.0
+#
+# CI + release for one RetrySight tier. Tier specifics come from .github/tier.env, so this file
+# is identical in all four tier repositories.
+#
+#   pull_request / push to main   tests, image build check (amd64), Helm + compose render, agents
+#   tag v*                         all of the above, then:
+#                                    - multi-arch images -> ghcr.io/<owner>/<repo>/<component>:<version> (+ :latest)
+#                                    - docker save tarballs, Helm chart, compose file, agent installers
+#                                      -> CDN (R2: enterprise/<tier>/<version>/ and latest/) and the GitHub Release
+#
+# Required for tags: secret CLOUDFLARE_API_TOKEN (R2 write) and secret or variable CLOUDFLARE_ACCOUNT_ID.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '20'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        run: |
+          file_version="$(tr -d '[:space:]' < VERSION)"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            tag_version="${GITHUB_REF#refs/tags/v}"
+            if [[ "${tag_version}" != "${file_version}" ]]; then
+              echo "::error::Tag v${tag_version} does not match VERSION (${file_version})"
+              exit 1
+            fi
+          fi
+          echo "value=${file_version}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ui/manager-dashboard/package-lock.json
+
+      - uses: azure/setup-helm@v4
+
+      - name: Java tests
+        run: mvn -B verify
+
+      - name: Dashboard build
+        working-directory: ui/manager-dashboard
+        run: npm ci && npm run build
+
+      - name: Helm lint
+        run: helm lint helm/retrysight && helm template ci helm/retrysight --set clickhouse.enabled=true --set minio.enabled=true > /dev/null
+
+      - name: License headers
+        run: python3 scripts/licensing/check-copyright-headers.py
+
+      - name: CDN + installer checks
+        run: bash scripts/ci/test-cdn-installer-fixes.sh
+
+  images:
+    name: Docker images
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      RETRYSIGHT_VERSION: ${{ needs.test.outputs.version }}
+      IS_TAG: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Build manager jar
+        run: mvn -B -q package -Dmaven.test.skip=true -pl manager/manager-app -am
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: env.IS_TAG == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build images
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PUSH_IMAGES: ${{ env.IS_TAG }}
+          EXPORT_IMAGES: ${{ env.IS_TAG }}
+        run: bash scripts/ci/build-images.sh
+
+      - name: Keep image tarballs for publishing
+        if: env.IS_TAG == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-images
+          path: release/docker-export/*.tar.gz
+          retention-days: 3
+          compression-level: 0
+          if-no-files-found: error
+
+  chart:
+    name: Helm chart + compose
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      RETRYSIGHT_VERSION: ${{ needs.test.outputs.version }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+
+      - name: Package Helm chart
+        run: bash scripts/ci/package-helm.sh
+
+      - name: Render compose file
+        run: bash scripts/ci/render-cdn-compose.sh release/docker-compose.yml
+
+      # Artifacts are only needed by the publish job; skip them on ordinary pushes and PRs
+      # so CI does not consume Actions storage.
+      - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: chart
+          path: |
+            release/retrysight-*.tgz
+            release/manifest.yaml
+            release/docker-compose.yml
+          retention-days: 3
+          if-no-files-found: error
+
+  agent:
+    name: Agent (${{ matrix.name }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux, os: ubuntu-latest, artifact: agent-linux, files: "*.deb" }
+          - { name: windows, os: windows-latest, artifact: agent-windows, files: "*.msi" }
+          - { name: macos-arm64, os: macos-15, artifact: agent-macos-arm64, files: "*.pkg" }
+          - { name: macos-x64, os: macos-15-intel, artifact: agent-macos-x64, files: "*.pkg" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Package agent
+        shell: bash
+        run: |
+          chmod +x scripts/ci/package-agent-ci.sh scripts/package-agent.sh
+          ./scripts/ci/package-agent-ci.sh
+
+      - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            release/agent-installers/${{ matrix.files }}
+            release/agent-installers/*.jar
+          retention-days: 3
+          if-no-files-found: error
+
+  publish:
+    name: Publish (CDN + GitHub Release)
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, images, chart, agent]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.test.outputs.version }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Load tier metadata
+        run: grep -E '^(TIER_SLUG|INSTALLATION_TIER)=' .github/tier.env >> "$GITHUB_ENV"
+
+      - name: Stage CDN layout
+        run: |
+          if [[ -n "${CLOUDFLARE_API_TOKEN}" ]]; then node scripts/ci/cleanup-agent-cdn.mjs --tier "${TIER_SLUG}" --snapshot-remote || echo "No previous release to snapshot"; fi
+          node scripts/ci/stage-agent-cdn.mjs \
+            --tier "${TIER_SLUG}" \
+            --installation-tier "${INSTALLATION_TIER}" \
+            --version "${VERSION}" \
+            --source dist \
+            --docker-source dist/docker-images \
+            --helm-file "dist/chart/retrysight-${VERSION}.tgz" \
+            --compose-file dist/chart/docker-compose.yml
+
+      - name: Release notes
+        run: |
+          {
+            echo "## Install"
+            echo
+            echo '```bash'
+            echo "curl -fsSL https://app.retrysight.com/enterprise/${TIER_SLUG}/${VERSION}/docker-compose.yml -o docker-compose.yml"
+            echo "docker compose up -d"
+            echo '```'
+            echo
+            echo "Helm: \`helm upgrade --install retrysight ./retrysight-${VERSION}.tgz -n retrysight --create-namespace\`"
+            echo
+            echo "Images (linux/amd64, linux/arm64):"
+            for c in postgres manager frontend; do echo "- \`ghcr.io/${GITHUB_REPOSITORY,,}/${c}:${VERSION}\`"; done
+            echo
+            echo "Air-gapped: \`docker load -i retrysight-<component>-${VERSION}-linux-<arch>.tar.gz\` for each image."
+          } > release-notes.md
+
+      # The GitHub Release and GHCR images do not need CDN credentials; publish them first.
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.event.repository.name }} ${{ env.VERSION }}
+          body_path: release-notes.md
+          generate_release_notes: true
+          prerelease: ${{ contains(env.VERSION, '-') }}
+          files: |
+            dist/chart/*
+            dist/docker-images/*.tar.gz
+            dist/agent-linux/*
+            dist/agent-windows/*.msi
+            dist/agent-macos-*/*.pkg
+            release/cdn-staging/enterprise/*/latest/manifest.json
+          fail_on_unmatched_files: true
+          overwrite_files: true
+      - name: Check CDN credentials (re-run this job after adding them)
+        run: |
+          if [[ -z "${CLOUDFLARE_API_TOKEN}" || -z "${CLOUDFLARE_ACCOUNT_ID}" ]]; then
+            echo "::error::Set CLOUDFLARE_API_TOKEN (secret) and CLOUDFLARE_ACCOUNT_ID (secret or variable) to publish to the CDN."
+            exit 1
+          fi
+
+      - name: Upload to CDN
+        run: node scripts/ci/upload-agent-r2.mjs
+
+      - name: Prune stale files from latest/
+        run: node scripts/ci/cleanup-agent-cdn.mjs --tier "${TIER_SLUG}" --prune-stale
+
+      - name: Verify CDN
+        run: |
+          base="https://app.retrysight.com/enterprise/${TIER_SLUG}"
+          for path in "latest/manifest.json" "${VERSION}/manifest.json" "${VERSION}/docker-compose.yml"; do
+            curl -fsS -o /dev/null -w "%{http_code} ${base}/${path}\n" "${base}/${path}"
+          done
+          curl -fsS "${base}/latest/manifest.json" | jq -e --arg v "${VERSION}" '.version == $v'
+

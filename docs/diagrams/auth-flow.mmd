@@ -1,0 +1,30 @@
+flowchart TD
+  subgraph local["Local login"]
+    L1[User enters email/password]
+    L2[POST /api/v1/auth/login]
+    L3{Valid credentials?}
+    L4[JWT issued to UI]
+    L1 --> L2 --> L3
+    L3 -->|yes| L4
+    L3 -->|no| L5[401 + rate limit]
+  end
+
+  subgraph sso["SSO login (OIDC / SAML)"]
+    S1[Redirect to IdP]
+    S2[IdP authenticates user]
+    S3[Manager provisions UI user]
+    S4[One-time code redirect]
+    S5[POST /api/v1/auth/sso/exchange]
+    S6[JWT issued to UI]
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6
+  end
+
+  subgraph agent["Agent ingest"]
+    A1[X-Agent-Api-Key header]
+    A2[ApiKeyHasher + DB lookup]
+    A3[ROLE_AGENT context]
+    A1 --> A2 --> A3
+  end
+
+  L4 --> G[GraphQL / REST with Bearer JWT]
+  S6 --> G

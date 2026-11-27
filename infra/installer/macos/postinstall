@@ -1,0 +1,75 @@
+#!/bin/bash
+# Copyright (c) 2026 Arka Prava Ghosh
+# SPDX-License-Identifier: Apache-2.0
+# jpackage macOS PKG postinstall — register LaunchAgent so the collector
+# starts at user login and restarts on crash (RunAtLoad + KeepAlive).
+set -euo pipefail
+
+LABEL="com.retrysight.agent"
+APP_LAUNCHER="/Applications/RetrySightAgent.app/Contents/MacOS/RetrySightAgent"
+PLIST_DEST="/Library/LaunchAgents/${LABEL}.plist"
+
+if [[ ! -x "${APP_LAUNCHER}" ]]; then
+  # Fallback when --install-dir overrides Applications
+  for candidate in \
+    "/Applications/RetrySightAgent.app/Contents/MacOS/RetrySightAgent" \
+    "/Library/Application Support/RetrySightAgent/RetrySightAgent.app/Contents/MacOS/RetrySightAgent"
+  do
+    if [[ -x "${candidate}" ]]; then
+      APP_LAUNCHER="${candidate}"
+      break
+    fi
+  done
+fi
+
+if [[ ! -x "${APP_LAUNCHER}" ]]; then
+  echo "RetrySightAgent launcher not found; skipping auto-start registration" >&2
+  exit 0
+fi
+
+mkdir -p "$(dirname "${PLIST_DEST}")"
+cat > "${PLIST_DEST}" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>${LABEL}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${APP_LAUNCHER}</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>StandardOutPath</key>
+  <string>/tmp/retrysight-agent.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/retrysight-agent.err</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>SPRING_PROFILES_ACTIVE</key>
+    <string>__SPRING_PROFILE__</string>
+  </dict>
+</dict>
+</plist>
+EOF
+chmod 644 "${PLIST_DEST}"
+
+# Load for the current console user when possible (PKG runs as root).
+CONSOLE_USER="$(stat -f '%Su' /dev/console 2>/dev/null || true)"
+if [[ -n "${CONSOLE_USER}" && "${CONSOLE_USER}" != "root" && "${CONSOLE_USER}" != "loginwindow" ]]; then
+  CONSOLE_UID="$(id -u "${CONSOLE_USER}" 2>/dev/null || true)"
+  if [[ -n "${CONSOLE_UID}" ]]; then
+    launchctl bootout "gui/${CONSOLE_UID}/${LABEL}" 2>/dev/null || true
+    launchctl bootstrap "gui/${CONSOLE_UID}" "${PLIST_DEST}" 2>/dev/null \
+      || launchctl load -w "${PLIST_DEST}" 2>/dev/null \
+      || true
+  fi
+fi
+
+echo "Registered ${LABEL} LaunchAgent (starts at login for each user)."
+exit 0

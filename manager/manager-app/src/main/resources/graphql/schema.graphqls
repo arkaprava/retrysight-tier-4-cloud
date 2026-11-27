@@ -1,0 +1,895 @@
+scalar DateTime
+scalar Long
+
+type Query {
+    platformFeatures: PlatformFeatures!
+    sourceTools: [SourceToolInfo!]!
+    users: [UserSummary!]!
+    agents: [Agent!]!
+    staleAgents: [Agent!]!
+    agent(id: ID!): Agent
+    tasks(
+        agentId: ID
+        sourceTool: SourceTool
+        from: DateTime
+        to: DateTime
+        minRetries: Int
+        user: String
+        repo: String
+        branch: String
+        remoteHost: String
+        page: Int
+        size: Int
+    ): TaskConnection!
+    task(id: ID!): Task
+    dashboardSummary(from: DateTime, to: DateTime, user: String): DashboardSummary!
+    costSummary(from: DateTime, to: DateTime, user: String, sourceTool: SourceTool): CostSummary!
+    retryAnalysis(from: DateTime, to: DateTime, user: String, sourceTool: SourceTool): RetryAnalysisSummary!
+    costBudgets: [CostBudget!]!
+    costAlerts: [CostAlert!]!
+    costFeatures: CostFeatures!
+    billingReconciliation(from: DateTime, to: DateTime): BillingReconciliation
+    apiKeys: [ApiKeySummary!]!
+    alertChannels: [AlertChannel!]!
+    scheduledReports: [ScheduledReport!]!
+    retentionSettings: RetentionSettings!
+    archivePolicy: ArchivePolicy!
+    archiveRuns: [ArchiveRun!]!
+    archiveColdObjects(dataset: String, dayPrefix: String): [ArchiveRestoreItem!]!
+    hotDataPartitions: [HotDataPartition!]!
+    evalScorecards(taskId: ID): [EvalScorecard!]!
+    evalDefinitions: [EvalDefinition!]!
+    evalRuns(taskId: ID!): [EvalRun!]!
+    evalSummary(from: DateTime, to: DateTime): EvalSummary!
+    annotationQueue(status: AnnotationQueueStatus): [AnnotationQueueItem!]!
+    evalDatasets: [EvalDataset!]!
+    evalDataset(id: ID!): EvalDataset!
+    evalExperiments: [EvalExperiment!]!
+    evalExperimentResults(experimentId: ID!): [EvalExperimentResult!]!
+    traceSpans(taskId: ID, sourceTool: SourceTool, from: DateTime, to: DateTime): [TraceSpan!]!
+    topicPatterns: [TopicPattern!]!
+    sessionFeedback(taskId: ID!): [SessionFeedback!]!
+}
+
+type Mutation {
+    login(email: String!, password: String!): AuthPayload!
+    createCostBudget(
+        name: String!
+        scope: BudgetScope!
+        scopeValue: String
+        period: BudgetPeriod!
+        limitUsd: Float!
+        alertThresholdPct: Float
+        active: Boolean
+    ): CostBudget!
+    updateCostBudget(
+        id: ID!
+        name: String
+        scope: BudgetScope
+        scopeValue: String
+        period: BudgetPeriod
+        limitUsd: Float
+        alertThresholdPct: Float
+        active: Boolean
+    ): CostBudget!
+    deleteCostBudget(id: ID!): Boolean!
+    importBillingActual(
+        periodStart: DateTime!
+        periodEnd: DateTime!
+        actualCostUsd: Float!
+        notes: String
+    ): BillingActual!
+    fetchCursorBillingActual(
+        periodStart: DateTime!
+        periodEnd: DateTime!
+    ): BillingActual!
+    createApiKey(name: String!, role: String): ApiKeyCreated!
+    rotateApiKey(id: ID!): ApiKeyCreated!
+    revokeApiKey(id: ID!): Boolean!
+    createAlertChannel(name: String!, channelType: String!, target: String!): AlertChannel!
+    deleteAlertChannel(id: ID!): Boolean!
+    createScheduledReport(
+        name: String!
+        dataset: String!
+        format: String!
+        cronExpression: String!
+        emailTo: String
+    ): ScheduledReport!
+    deleteScheduledReport(id: ID!): Boolean!
+    updateRetentionSettings(taskEventsDays: Int!): RetentionSettings!
+    updateArchivePolicy(input: ArchivePolicyInput!): ArchivePolicy!
+    testArchiveDestination: Boolean!
+    runArchiveJob(dryRun: Boolean): ArchiveRun!
+    rehydrateTokenUsageArchive(path: String!): Int!
+    createEvalScorecard(taskId: ID!, score: Float!, notes: String): EvalScorecard!
+    createEvalDefinition(
+        slug: String!
+        name: String!
+        kind: EvalDefinitionKind!
+        promptTemplate: String
+        ruleConfig: String
+        targetScope: EvalTargetScope
+        enabled: Boolean
+    ): EvalDefinition!
+    updateEvalDefinition(
+        id: ID!
+        name: String
+        promptTemplate: String
+        ruleConfig: String
+        enabled: Boolean
+    ): EvalDefinition!
+    deleteEvalDefinition(id: ID!): Boolean!
+    runTaskEvaluations(taskId: ID!): [EvalRun!]!
+    enqueueAnnotation(taskId: ID!, reason: AnnotationQueueReason): AnnotationQueueItem!
+    completeAnnotation(id: ID!, status: AnnotationQueueStatus!, notes: String): AnnotationQueueItem!
+    createEvalDataset(name: String!, description: String, source: EvalDatasetSource): EvalDataset!
+    addTaskToEvalDataset(datasetId: ID!, taskId: ID!): EvalDataset!
+    populateEvalDatasetFromFailedEvals(datasetId: ID!, from: DateTime, to: DateTime): EvalDataset!
+    populateEvalDatasetFromFilter(
+        datasetId: ID!
+        sourceTool: SourceTool
+        minRetries: Int
+        from: DateTime
+        to: DateTime
+    ): EvalDataset!
+    createEvalExperiment(
+        name: String!
+        datasetId: ID!
+        baselineDefinitionId: ID!
+        variantDefinitionId: ID!
+    ): EvalExperiment!
+    runEvalExperiment(experimentId: ID!): EvalExperiment!
+    runPlaygroundEval(taskId: ID!, definitionId: ID!, promptTemplate: String): PlaygroundEvalResult!
+    submitSessionFeedback(
+        taskId: ID!
+        eventId: ID
+        rating: Int!
+        comment: String
+        feedbackType: FeedbackType
+    ): SessionFeedback!
+    recomputeTopicPatterns(windowDays: Int): [TopicPattern!]!
+}
+
+type Subscription {
+    taskUpdated(agentId: ID): Task!
+    agentHeartbeat: Agent!
+}
+
+type AuthPayload {
+    token: String!
+    email: String!
+    displayName: String!
+    roles: [String!]!
+}
+
+enum InstallationTier {
+    TIER_1_CORE
+    TIER_2_ANALYTICS
+    TIER_3_INTEGRATION
+    TIER_4_CLOUD
+}
+
+enum SourceTool {
+    CURSOR
+    CLAUDE_CODE
+    CLAUDE_COWORK
+    CODEX
+    KIRO
+    WARP
+    COPILOT
+    WINDSURF
+    CONTINUE
+    CLINE
+    AIDER
+    OPENCODE
+    KIRO_IDE
+}
+
+enum TaskStatus {
+    ACTIVE
+    COMPLETED
+    ABANDONED
+}
+
+enum SessionReplayFormat {
+    JSON
+    MARKDOWN
+    PROMPT
+}
+
+enum TaskEventType {
+    EDIT
+    TEST_FAIL
+    DIFF_REJECTED
+    DIFF_ACCEPTED
+    SUBAGENT
+    TOKEN_USAGE
+    SESSION_START
+    SESSION_END
+    COMPACTION
+}
+
+type UserSummary {
+    developerEmail: String!
+    displayName: String
+    osUsername: String
+    gitEmail: String
+    agentCount: Int!
+}
+
+type PlatformFeatures {
+    installationTier: InstallationTier!
+    phase1Foundation: Boolean!
+    phase2Collectors: Boolean!
+    phase3YamlRegistry: Boolean!
+    phase4PushIngest: Boolean!
+    costEnabled: Boolean!
+    contractCostReviewEnabled: Boolean!
+    contractCostApplyEnabled: Boolean!
+    reportsEnabled: Boolean!
+    mcpEnabled: Boolean!
+    sourceToolsEnabled: Boolean!
+    pushIngestEnabled: Boolean!
+    gitContextCaptureEnabled: Boolean!
+    gitContextQueryEnabled: Boolean!
+    gitContextAdvancedEnabled: Boolean!
+    gitContextEnterpriseEnabled: Boolean!
+    retentionPurgeEnabled: Boolean!
+    archiveLocalEnabled: Boolean!
+    archiveNetworkEnabled: Boolean!
+    archiveObjectStorageEnabled: Boolean!
+    archiveRestoreEnabled: Boolean!
+    rollupAnalyticsEnabled: Boolean!
+    partitionMaintenanceEnabled: Boolean!
+    clickhouseAnalyticsEnabled: Boolean!
+    evaluationsEnabled: Boolean!
+    evalExperimentsEnabled: Boolean!
+    traceQueryEnabled: Boolean!
+    patternsEnabled: Boolean!
+}
+
+type SourceToolInfo {
+    id: SourceTool!
+    label: String!
+    configType: String!
+    minimumTier: InstallationTier!
+    defaultWatchPath: String!
+    logFormat: String!
+    capabilities: [String!]!
+    enabled: Boolean!
+}
+
+type Agent {
+    id: ID!
+    name: String!
+    developerEmail: String!
+    osUsername: String
+    displayName: String
+    gitEmail: String
+    hostname: String!
+    lastHeartbeatAt: DateTime
+    installedCollectors: String
+    createdAt: DateTime!
+    """True when lastHeartbeatAt is missing or older than manager.agents.stale-after-seconds."""
+    stale: Boolean!
+}
+
+type TaskConnection {
+    items: [Task!]!
+    totalCount: Int!
+}
+
+type ProjectContext {
+    projectRoot: String
+    repoName: String
+    gitBranch: String
+    gitCommit: String
+    gitCommitShort: String
+    remoteUrl: String
+    remoteHost: String
+    isDirty: Boolean
+    resolvedFrom: String
+    isSubmodule: Boolean
+    isWorktree: Boolean
+}
+
+type ApiKeySummary {
+    id: ID!
+    name: String!
+    keyPrefix: String
+    role: String!
+    active: Boolean!
+    createdAt: DateTime!
+    lastUsedAt: DateTime
+    revokedAt: DateTime
+}
+
+type ApiKeyCreated {
+    key: ApiKeySummary!
+    rawKey: String!
+}
+
+type AlertChannel {
+    id: ID!
+    name: String!
+    channelType: String!
+    target: String!
+    active: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type ScheduledReport {
+    id: ID!
+    name: String!
+    dataset: String!
+    format: String!
+    cronExpression: String!
+    emailTo: String
+    active: Boolean!
+    lastRunAt: DateTime
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type RetentionSettings {
+    taskEventsDays: Int!
+    updatedAt: DateTime!
+}
+
+type ArchiveCapabilities {
+    retentionPurge: Boolean!
+    archiveLocal: Boolean!
+    archiveNetwork: Boolean!
+    archiveObjectStorage: Boolean!
+    archiveRestore: Boolean!
+    rollupAnalytics: Boolean!
+    partitionMaintenance: Boolean!
+}
+
+type ArchivePolicy {
+    enabled: Boolean!
+    mode: String!
+    scheduleCron: String!
+    taskEventsDays: Int!
+    tokenUsageDays: Int!
+    taskHeadersDays: Int!
+    datasets: [String!]!
+    destinationType: String!
+    localPath: String
+    networkPath: String
+    s3Bucket: String
+    s3Prefix: String
+    s3Region: String
+    s3Endpoint: String
+    s3AccessKeyEnv: String
+    s3SecretKeyEnv: String
+    legalHold: Boolean!
+    updatedAt: DateTime!
+    capabilities: ArchiveCapabilities!
+}
+
+input ArchivePolicyInput {
+    enabled: Boolean
+    mode: String
+    scheduleCron: String
+    taskEventsDays: Int
+    tokenUsageDays: Int
+    taskHeadersDays: Int
+    datasets: [String!]
+    destinationType: String
+    localPath: String
+    networkPath: String
+    s3Bucket: String
+    s3Prefix: String
+    s3Region: String
+    s3Endpoint: String
+    s3AccessKeyEnv: String
+    s3SecretKeyEnv: String
+    legalHold: Boolean
+}
+
+type ArchiveRun {
+    id: ID!
+    startedAt: DateTime!
+    finishedAt: DateTime
+    status: String!
+    dryRun: Boolean!
+    mode: String
+    destinationType: String
+    rowsExported: Long!
+    rowsDeleted: Long!
+    bytesWritten: Long!
+    datasets: String
+    errorMessage: String
+    manifestSummary: String
+}
+
+type ArchiveRestoreItem {
+    dataset: String!
+    day: String!
+    path: String!
+    bytes: Long!
+}
+
+type HotDataPartition {
+    id: ID!
+    dataset: String!
+    periodStart: String!
+    periodEnd: String!
+    status: String!
+    notes: String
+    createdAt: String!
+}
+
+type EvalScorecard {
+    id: ID!
+    taskId: ID!
+    score: Float!
+    notes: String
+    createdBy: String!
+    createdAt: DateTime!
+}
+
+enum EvalDefinitionKind {
+    MANAGED
+    LLM_JUDGE
+    RULE
+}
+
+enum EvalTargetScope {
+    TASK
+    TURN
+    EVENT
+}
+
+enum EvalRunStatus {
+    PENDING
+    COMPLETE
+    FAILED
+    SKIPPED
+}
+
+enum EvalRunLabel {
+    PASS
+    FAIL
+    WARN
+}
+
+enum EvalTrigger {
+    ONLINE
+    BATCH
+    MANUAL
+}
+
+enum AnnotationQueueReason {
+    EVAL_FAILED
+    RANDOM_SAMPLE
+    MANUAL
+}
+
+enum AnnotationQueueStatus {
+    OPEN
+    DONE
+    SKIPPED
+}
+
+type EvalDefinition {
+    id: ID!
+    slug: String!
+    name: String!
+    kind: EvalDefinitionKind!
+    promptTemplate: String
+    ruleConfig: String
+    targetScope: EvalTargetScope!
+    enabled: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type EvalRun {
+    id: ID!
+    definitionId: ID!
+    definition: EvalDefinition
+    taskId: ID!
+    eventId: ID
+    score: Float
+    label: EvalRunLabel
+    explanation: String
+    status: EvalRunStatus!
+    triggeredBy: EvalTrigger!
+    createdAt: DateTime!
+}
+
+type EvalSummary {
+    totalRuns: Int!
+    passCount: Int!
+    failCount: Int!
+    warnCount: Int!
+    passRate: Float!
+}
+
+type AnnotationQueueItem {
+    id: ID!
+    taskId: ID!
+    reason: AnnotationQueueReason!
+    assignedTo: String
+    status: AnnotationQueueStatus!
+    notes: String
+    createdBy: String
+    createdAt: DateTime!
+    completedAt: DateTime
+}
+
+enum EvalDatasetSource {
+    MANUAL
+    FROM_FAILED_EVALS
+    FROM_FILTER
+}
+
+enum EvalExperimentStatus {
+    DRAFT
+    RUNNING
+    COMPLETE
+    FAILED
+}
+
+enum FeedbackType {
+    THUMBS
+    STAR
+    COMMENT
+}
+
+type EvalDataset {
+    id: ID!
+    name: String!
+    description: String
+    source: EvalDatasetSource!
+    filterJson: String
+    taskCount: Int!
+    createdBy: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type EvalExperimentComparison {
+    taskCount: Int!
+    baselinePassRate: Float!
+    variantPassRate: Float!
+    baselineAvgScore: Float!
+    variantAvgScore: Float!
+}
+
+type EvalExperiment {
+    id: ID!
+    name: String!
+    datasetId: ID!
+    baselineDefinitionId: ID!
+    variantDefinitionId: ID!
+    status: EvalExperimentStatus!
+    notes: String
+    createdBy: String
+    createdAt: DateTime!
+    completedAt: DateTime
+    comparison: EvalExperimentComparison
+}
+
+type EvalExperimentResult {
+    id: ID!
+    experimentId: ID!
+    taskId: ID!
+    variant: String!
+    evalRunId: ID
+    score: Float
+    label: String
+    createdAt: DateTime!
+}
+
+type PlaygroundEvalResult {
+    taskId: ID!
+    definitionId: ID!
+    label: String!
+    score: Float
+    explanation: String
+    promptUsed: String
+}
+
+type TraceSpan {
+    id: ID!
+    taskId: ID!
+    externalTraceId: String
+    name: String!
+    kind: String
+    startAt: DateTime!
+    durationMs: Long!
+    status: String
+    parentSpanId: ID
+    inputRedacted: String
+    outputRedacted: String
+    sourceTool: String
+}
+
+type SessionFeedback {
+    id: ID!
+    taskId: ID!
+    eventId: ID
+    rating: Int!
+    comment: String
+    feedbackType: FeedbackType!
+    createdBy: String!
+    createdAt: DateTime!
+}
+
+type TopicPattern {
+    id: ID!
+    label: String!
+    taskCount: Int!
+    failRate: Float!
+    sampleTaskIds: [ID!]!
+    periodStart: DateTime!
+    periodEnd: DateTime!
+    computedAt: DateTime!
+    relevanceScore: Float!
+    suspicious: Boolean!
+    flagReason: String
+    windowDays: Int!
+}
+
+type SpanNode {
+    id: ID!
+    name: String!
+    kind: String!
+    startMs: Long!
+    durationMs: Long!
+    status: String!
+    parentId: ID
+    attributes: String
+}
+
+type Task {
+    id: ID!
+    description: String!
+    sourceTool: SourceTool!
+    """Distinct LLM models used across token turns in this session."""
+    modelsUsed: [String!]!
+    """Model from the latest token turn, if recorded."""
+    latestModel: String
+    retryCount: Int!
+    status: TaskStatus!
+    externalSessionId: String!
+    startedAt: DateTime!
+    completedAt: DateTime
+    metadata: String
+    projectContext: ProjectContext
+    agent: Agent!
+    tokenUsage: TokenUsageSummary!
+    events: [TaskEvent!]!
+    timeline: [TaskEvent!]!
+    tokenTurns: [TokenTurn!]!
+    sessionReplay(format: SessionReplayFormat = PROMPT): String!
+    """Hierarchical span tree for waterfall visualization (derived from timeline or OTel spans)."""
+    spanTree: [SpanNode!]!
+    evalRuns: [EvalRun!]!
+    traceSpans: [TraceSpan!]!
+    sessionFeedback: [SessionFeedback!]!
+}
+
+type TaskEvent {
+    id: ID!
+    eventType: TaskEventType!
+    occurredAt: DateTime!
+    retry: Boolean!
+    sequenceNum: Int!
+    payload: String
+    tokenUsage: EventTokenUsage
+}
+
+type EventTokenUsage {
+    inputTokens: Long!
+    outputTokens: Long!
+    cacheReadTokens: Long!
+    cacheWriteTokens: Long!
+    reasoningTokens: Long!
+    totalTokens: Long!
+    estimatedCostUsd: Float
+    model: String
+}
+
+type TokenTurn {
+    id: ID!
+    turnIndex: Int!
+    model: String
+    inputTokens: Long!
+    outputTokens: Long!
+    cacheReadTokens: Long!
+    cacheWriteTokens: Long!
+    reasoningTokens: Long!
+    estimatedCostUsd: Float
+    recordedAt: DateTime!
+}
+
+type TokenUsageSummary {
+    inputTokens: Long!
+    outputTokens: Long!
+    cacheReadTokens: Long!
+    cacheWriteTokens: Long!
+    reasoningTokens: Long!
+    estimatedCostUsd: Float!
+}
+
+type DashboardSummary {
+    totalTasks: Int!
+    avgRetriesPerTask: Float!
+    totalTokens: TokenUsageSummary!
+    """Sum of estimatedCostUsd for token turns linked to retry=true events (see QueryService)."""
+    retryTokenCostUsd: Float!
+    retriesByTool: [ToolMetric!]!
+    tokensByTool: [ToolMetric!]!
+    """LLM turn counts grouped by IDE (sourceTool) and model."""
+    llmRunsByToolAndModel: [LlmRunMetric!]!
+    retryTrend: [TimeSeriesPoint!]!
+    """Daily retry counts broken down by source tool."""
+    retryTrendByTool: [TrendSeries!]!
+    """Daily retry counts broken down by attributed LLM model."""
+    retryTrendByModel: [TrendSeries!]!
+    topRetryTasks: [Task!]!
+    evalSummary: EvalSummary
+    evalPassRateTrend: [TimeSeriesPoint!]!
+}
+
+type ToolMetric {
+    tool: String!
+    value: Float!
+}
+
+type LlmRunMetric {
+    sourceTool: String!
+    model: String!
+    turnCount: Int!
+    costUsd: Float!
+}
+
+type TimeSeriesPoint {
+    timestamp: String!
+    value: Float!
+}
+
+"""Named daily series used for multi-line cost/retry trend breakdowns."""
+type TrendSeries {
+    name: String!
+    points: [TimeSeriesPoint!]!
+}
+
+enum BudgetScope {
+    ORG
+    USER
+    TOOL
+}
+
+enum BudgetPeriod {
+    WEEKLY
+    MONTHLY
+}
+
+enum BillingActualSource {
+    MANUAL
+    CURSOR_API
+}
+
+type CostSummary {
+    totalCostUsd: Float!
+    retryCostUsd: Float!
+    retryWasteRatio: Float!
+    costByTool: [ToolMetric!]!
+    costByModel: [ToolMetric!]!
+    """LLM turn counts and spend grouped by IDE and model."""
+    llmRunsByToolAndModel: [LlmRunMetric!]!
+    costByUser: [UserCostMetric!]!
+    costTrend: [TimeSeriesPoint!]!
+    costTrendByTool: [TrendSeries!]!
+    costTrendByModel: [TrendSeries!]!
+    retryCostTrend: [TimeSeriesPoint!]!
+    retryCostTrendByTool: [TrendSeries!]!
+    retryCostTrendByModel: [TrendSeries!]!
+    topCostlyTasks: [CostlyTaskSummary!]!
+}
+
+type UserCostMetric {
+    developerEmail: String!
+    displayName: String
+    costUsd: Float!
+}
+
+type CostlyTaskSummary {
+    taskId: ID!
+    description: String!
+    sourceTool: String!
+    totalCostUsd: Float!
+    retryCostUsd: Float!
+    retryCount: Int!
+}
+
+type CostBudget {
+    id: ID!
+    name: String!
+    scope: BudgetScope!
+    scopeValue: String
+    period: BudgetPeriod!
+    limitUsd: Float!
+    alertThresholdPct: Float!
+    active: Boolean!
+    currentSpendUsd: Float!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type CostAlert {
+    id: ID!
+    budgetId: ID!
+    budgetName: String!
+    triggeredAt: DateTime!
+    spendUsd: Float!
+    limitUsd: Float!
+    message: String!
+}
+
+type CostFeatures {
+    enterpriseEnabled: Boolean!
+    billingApiEnabled: Boolean!
+    billingReconciliationAvailable: Boolean!
+}
+
+type BillingActual {
+    id: ID!
+    periodStart: DateTime!
+    periodEnd: DateTime!
+    actualCostUsd: Float!
+    source: BillingActualSource!
+    notes: String
+    importedAt: DateTime!
+    importedBy: String!
+}
+
+type BillingReconciliation {
+    estimatedCostUsd: Float!
+    actualCostUsd: Float!
+    varianceUsd: Float!
+    variancePct: Float!
+    actuals: [BillingActual!]!
+}
+
+type ModelRetryMetric {
+    model: String!
+    value: Float!
+}
+
+type ModelRetryRateMetric {
+    model: String!
+    retryRate: Float!
+    totalTurns: Int!
+}
+
+type ModelRetryTypeMetric {
+    model: String!
+    eventType: TaskEventType!
+    count: Int!
+}
+
+type RetryTaskByModelSummary {
+    model: String!
+    taskId: ID!
+    description: String!
+    sourceTool: String!
+    retryCount: Int!
+    retryCostUsd: Float!
+}
+
+type RetryAnalysisSummary {
+    retriesByModel: [ModelRetryMetric!]!
+    retryCostByModel: [ModelRetryMetric!]!
+    retryWasteByModel: [ModelRetryMetric!]!
+    retryRateByModel: [ModelRetryRateMetric!]!
+    retryTypeByModel: [ModelRetryTypeMetric!]!
+    topRetryTasksByModel: [RetryTaskByModelSummary!]!
+    unattributedRetryCount: Int!
+}

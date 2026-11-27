@@ -1,0 +1,12 @@
+{
+  "name": "@agentretry/mcp-workspace",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @agentretry/mcp-core && npm run build -w @agentretry/mcp-server",
+    "test": "npm run test -w @agentretry/mcp-core",
+    "start": "npm run start -w @agentretry/mcp-server"
+  }
+}

@@ -1,0 +1,281 @@
+# Copyright (c) 2026 Arka Prava Ghosh
+# SPDX-License-Identifier: Apache-2.0
+
+spring:
+  application:
+    name: agent-retry-manager
+  # BYO RDBMS: set SPRING_DATASOURCE_* (or legacy POSTGRES_* for local/docker defaults).
+  # Supported OLTP targets: PostgreSQL (default), MySQL 8+, SQL Server, Oracle — see docs/BYO_RDBMS.md
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:agent_retry}}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:agent_retry}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:agent_retry}}
+    # Optional override when auto-detect from URL is wrong, e.g. oracle.jdbc.OracleDriver
+    # driver-class-name: ${SPRING_DATASOURCE_DRIVER}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    # Optional Hibernate dialect override for BYO RDBMS, e.g. org.hibernate.dialect.OracleDialect
+    # database-platform: ${SPRING_JPA_DATABASE_PLATFORM}
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  graphql:
+    graphiql:
+      enabled: true
+    websocket:
+      path: /graphql
+    cors:
+      allowed-origins: "http://localhost:5173,http://localhost:8080,http://localhost:3000"
+
+server:
+  # Default 28477 (obscure) avoids well-known service ports like :8080/:8081; override with MANAGER_PORT or SERVER_PORT.
+  port: ${MANAGER_PORT:28477}
+
+manager:
+  platform:
+    installation-tier: TIER_4_CLOUD
+    features:
+      phase1-foundation: true
+      phase2-collectors: true
+      phase3-yaml-registry: true
+      phase4-push-ingest: true
+      git-context-capture: true
+      git-context-query: true
+      git-context-advanced: true
+      git-context-enterprise: true
+    privacy:
+      redact-project-root: false
+      store-full-prompts: false
+  auth:
+    jwt-secret: agent-retry-platform-dev-secret-key-32chars
+    jwt-expiration-hours: 24
+    mcp-token-expiration-days: ${MCP_TOKEN_EXPIRATION_DAYS:30}
+    # Prefer AGENT_API_KEY in enterprise; empty keeps local seed of dev-agent-key on empty DB.
+    agent-api-key: ${AGENT_API_KEY:}
+    # Previous AGENT key stays valid this long after rotateApiKey (dual-key grace).
+    api-key-rotation-grace-seconds: ${API_KEY_ROTATION_GRACE_SECONDS:86400}
+    secadmin:
+      email: secadmin@local
+      password: ${SECADMIN_PASSWORD:changeme}
+    sso:
+      callback-base-url: http://localhost:5173
+      manager-base-url: ${SSO_MANAGER_BASE_URL:http://localhost:${MANAGER_PORT:28477}}
+      secret-encryption-key: ${SSO_SECRET_KEY:dev-sso-secret-encryption-key-32}
+  agents:
+    stale-after-seconds: ${MANAGER_AGENTS_STALE_AFTER_SECONDS:120}
+  retention:
+    task-events-days: ${RETENTION_TASK_EVENTS_DAYS:90}
+    enabled: true
+  analytics:
+    max-query-range-days: ${ANALYTICS_MAX_QUERY_RANGE_DAYS:90}
+    rollup-prefer-min-days: ${ANALYTICS_ROLLUP_PREFER_MIN_DAYS:14}
+    clickhouse:
+      # Dual-write token_usage / task_events to ClickHouse; cost aggregates read from CH when read-enabled.
+      enabled: ${CLICKHOUSE_ENABLED:false}
+      read-enabled: ${CLICKHOUSE_READ_ENABLED:true}
+      url: ${CLICKHOUSE_URL:http://localhost:8123}
+      username: ${CLICKHOUSE_USER:default}
+      password: ${CLICKHOUSE_PASSWORD:}
+      database: ${CLICKHOUSE_DATABASE:agent_retry}
+      flush-interval-ms: ${CLICKHOUSE_FLUSH_INTERVAL_MS:1000}
+      flush-batch-size: ${CLICKHOUSE_FLUSH_BATCH_SIZE:500}
+      connect-timeout-ms: ${CLICKHOUSE_CONNECT_TIMEOUT_MS:3000}
+      read-timeout-ms: ${CLICKHOUSE_READ_TIMEOUT_MS:30000}
+  archive:
+    schedule-cron: ${ARCHIVE_SCHEDULE_CRON:0 30 2 * * *}
+  otel:
+    ingest-enabled: ${OTEL_INGEST_ENABLED:true}
+    cowork-mapping-enabled: ${OTEL_COWORK_MAPPING_ENABLED:true}
+    trace-mapping-enabled: ${OTEL_TRACE_MAPPING_ENABLED:true}
+    max-request-body-bytes: ${OTEL_MAX_REQUEST_BODY_BYTES:5242880}
+    max-log-records: ${OTEL_MAX_LOG_RECORDS:1000}
+    max-spans: ${OTEL_MAX_SPANS:1000}
+  cowork:
+    analytics-api-enabled: ${COWORK_ANALYTICS_API_ENABLED:false}
+    analytics-api-url: ${COWORK_ANALYTICS_API_URL:}
+    analytics-api-key: ${COWORK_ANALYTICS_API_KEY:}
+    analytics-reconcile-cron: ${COWORK_ANALYTICS_RECONCILE_CRON:0 15 3 * * *}
+  reports:
+    enabled-phases: [1, 2, 3, 4, 5, 6]
+    enabled-formats: [CSV, JSON, PDF]
+    enabled-datasets:
+      - EXECUTIVE_SUMMARY
+      - TASK_LIST
+      - TASK_DETAIL
+      - COLLECTOR_ACTIVITY
+      - RETRY_WASTE
+      - RETRY_BY_MODEL
+      - TOKEN_COST
+    max-date-range-days: 90
+  cost:
+    enterprise-enabled: ${COST_ENTERPRISE_ENABLED:false}
+    billing-api-enabled: ${COST_BILLING_API_ENABLED:false}
+    cursor-billing-api-url: ${CURSOR_BILLING_API_URL:https://api.cursor.com/teams/spend}
+    cursor-billing-api-key: ${CURSOR_BILLING_API_KEY:}
+  alerts:
+    webhook-enabled: true
+    email-enabled: false
+    smtp-host: ${ALERT_SMTP_HOST:}
+    smtp-port: ${ALERT_SMTP_PORT:587}
+    smtp-from: ${ALERT_SMTP_FROM:alerts@localhost}
+  chat:
+    enabled: ${CHAT_ENABLED:true}
+    ollama-base-url: ${OLLAMA_BASE_URL:http://127.0.0.1:11434}
+    model: ${CHAT_MODEL:llama3.2}
+    temperature: 0.2
+    max-tool-rounds: 4
+    max-history-messages: 20
+    requests-per-minute: ${CHAT_RPM:30}
+    max-tool-result-chars: 12000
+    allow-deterministic-fallback: ${CHAT_DETERMINISTIC_FALLBACK:true}
+    connect-timeout-ms: 3000
+    read-timeout-ms: 120000
+  evaluations:
+    enabled: ${EVALUATIONS_ENABLED:true}
+    online-on-complete: ${EVALUATIONS_ONLINE_ON_COMPLETE:true}
+    auto-enqueue-on-fail: ${EVALUATIONS_AUTO_ENQUEUE_ON_FAIL:true}
+    replay-excerpt-max-chars: ${EVALUATIONS_REPLAY_MAX_CHARS:8000}
+  patterns:
+    schedule-cron: ${PATTERNS_SCHEDULE_CRON:0 0 4 * * *}
+    default-window-days: ${PATTERNS_DEFAULT_WINDOW_DAYS:30}
+    max-window-days: ${PATTERNS_MAX_WINDOW_DAYS:90}
+    min-window-days: ${PATTERNS_MIN_WINDOW_DAYS:1}
+  security:
+    graphiql-enabled: ${SECURITY_GRAPHIQL_ENABLED:true}
+    require-graphql-auth: ${SECURITY_REQUIRE_GRAPHQL_AUTH:false}
+    rate-limit:
+      login-failures-per-ip: ${SECURITY_LOGIN_FAILURES_PER_IP:10}
+      login-window-seconds: ${SECURITY_LOGIN_WINDOW_SECONDS:900}
+      ingest-requests-per-key: ${SECURITY_INGEST_RPM:100}
+      ingest-window-seconds: ${SECURITY_INGEST_WINDOW_SECONDS:60}
+      mcp-token-requests-per-ip: ${SECURITY_MCP_TOKEN_RPM:10}
+
+logging:
+  level:
+    com.agentretry: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${POSTGRES_HOST:postgres}:${POSTGRES_PORT:5432}/${POSTGRES_DB:agent_retry}}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:agent_retry}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:agent_retry}}
+  graphql:
+    cors:
+      allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost,http://localhost:80,http://localhost:5173,http://localhost:8080,http://127.0.0.1:8080}"
+
+manager:
+  auth:
+    jwt-secret: ${JWT_SECRET:agent-retry-platform-dev-secret-key-32chars}
+    secadmin:
+      email: ${SECADMIN_EMAIL:secadmin@local}
+      password: ${SECADMIN_PASSWORD:changeme}
+    sso:
+      callback-base-url: ${SSO_CALLBACK_BASE_URL:http://localhost}
+      manager-base-url: ${SSO_MANAGER_BASE_URL:http://manager:${MANAGER_PORT:28477}}
+      secret-encryption-key: ${SSO_SECRET_KEY:dev-sso-secret-encryption-key-32}
+  security:
+    graphiql-enabled: false
+    require-graphql-auth: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev-h2
+  datasource:
+    url: jdbc:h2:mem:agent_retry;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  liquibase:
+    enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: tier-core
+manager:
+  platform:
+    installation-tier: TIER_1_CORE
+    features:
+      phase2-collectors: false
+      phase3-yaml-registry: false
+      phase4-push-ingest: false
+      git-context-capture: false
+      git-context-query: false
+      git-context-advanced: false
+      git-context-enterprise: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: tier-analytics
+manager:
+  platform:
+    installation-tier: TIER_2_ANALYTICS
+    features:
+      phase3-yaml-registry: false
+      phase4-push-ingest: false
+      git-context-query: false
+      git-context-advanced: false
+      git-context-enterprise: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: tier-integration
+manager:
+  platform:
+    installation-tier: TIER_3_INTEGRATION
+    features:
+      phase4-push-ingest: false
+      git-context-enterprise: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: tier-cloud
+manager:
+  platform:
+    installation-tier: TIER_4_CLOUD
+    features:
+      phase4-push-ingest: true
+
+---
+# Production hardening — activate with spring.profiles.active=prod (optionally with docker).
+# Always override JWT_SECRET, SECADMIN_PASSWORD, SSO_SECRET_KEY, and CORS_ALLOWED_ORIGINS.
+spring:
+  config:
+    activate:
+      on-profile: prod
+  graphql:
+    graphiql:
+      enabled: false
+manager:
+  auth:
+    jwt-secret: ${JWT_SECRET}
+    mcp-token-expiration-days: ${MCP_TOKEN_EXPIRATION_DAYS:7}
+    secadmin:
+      password: ${SECADMIN_PASSWORD}
+    sso:
+      secret-encryption-key: ${SSO_SECRET_KEY}
+  security:
+    graphiql-enabled: false
+    require-graphql-auth: true

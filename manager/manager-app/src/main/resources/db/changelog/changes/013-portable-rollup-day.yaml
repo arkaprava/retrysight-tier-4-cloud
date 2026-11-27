@@ -1,0 +1,38 @@
+# Copyright (c) 2026 Arka Prava Ghosh
+# SPDX-License-Identifier: Apache-2.0
+
+# Rename reserved "day" column to rollup_day for cross-RDBMS portability.
+# Uses quoted "day" (as created in 011) — Liquibase renameColumn uppercases and breaks H2/PG.
+databaseChangeLog:
+  - changeSet:
+      id: 013-portable-rollup-day
+      author: agent-retry
+      comment: Rename daily_*_rollups."day" → rollup_day
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 1
+            sql: >
+              SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+              FROM information_schema.columns
+              WHERE LOWER(table_name) = 'daily_cost_rollups'
+                AND LOWER(column_name) = 'day'
+      changes:
+        - sql:
+            dbms: postgresql,h2
+            splitStatements: true
+            sql: |
+              ALTER TABLE daily_cost_rollups RENAME COLUMN "day" TO rollup_day;
+              ALTER TABLE daily_retry_rollups RENAME COLUMN "day" TO rollup_day;
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            sql: |
+              ALTER TABLE daily_cost_rollups CHANGE COLUMN `day` rollup_day DATE NOT NULL;
+              ALTER TABLE daily_retry_rollups CHANGE COLUMN `day` rollup_day DATE NOT NULL;
+        - sql:
+            dbms: mssql
+            splitStatements: true
+            sql: |
+              EXEC sp_rename 'daily_cost_rollups.day', 'rollup_day', 'COLUMN';
+              EXEC sp_rename 'daily_retry_rollups.day', 'rollup_day', 'COLUMN';

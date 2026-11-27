@@ -1,0 +1,170 @@
+services:
+  postgres:
+    build:
+      context: ./docker/postgres
+    image: retrysight/tier-cloud-postgres:local
+    container_name: retrysight-cloud-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-agent_retry_cloud}
+      POSTGRES_USER: ${POSTGRES_USER:-retrysight_cloud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme-cloud}
+    ports:
+      - "${POSTGRES_PORT:-5435}:5432"
+    volumes:
+      - tier_cloud_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: retrysight-cloud-clickhouse
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DATABASE:-agent_retry_cloud}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT:-8125}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-9003}:9000"
+    volumes:
+      - tier_cloud_chdata:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8123/ping | grep -q Ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: retrysight-cloud-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9002}:9001"
+    volumes:
+      - tier_cloud_minio:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: retrysight-cloud-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      mc mb --ignore-existing local/$${ARCHIVE_S3_BUCKET:-retrysight-archive};
+      exit 0;
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      ARCHIVE_S3_BUCKET: ${ARCHIVE_S3_BUCKET:-retrysight-archive}
+
+  manager:
+    build:
+      context: .
+      dockerfile: infra/manager/Dockerfile
+    image: retrysight/tier-cloud-manager:local
+    container_name: retrysight-cloud-manager
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker,tier-cloud}
+      MANAGER_PORT: ${MANAGER_PORT:-28477}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-agent_retry_cloud}
+      POSTGRES_USER: ${POSTGRES_USER:-retrysight_cloud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme-cloud}
+      JWT_SECRET: ${JWT_SECRET:-agent-retry-platform-dev-secret-key-32chars}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8086,http://localhost:28477}
+      SECADMIN_EMAIL: ${SECADMIN_EMAIL:-secadmin@local}
+      SECADMIN_PASSWORD: ${SECADMIN_PASSWORD:-changeme}
+      SSO_SECRET_KEY: ${SSO_SECRET_KEY:-dev-sso-secret-encryption-key-32}
+      SSO_CALLBACK_BASE_URL: ${SSO_CALLBACK_BASE_URL:-http://localhost:8086}
+      SSO_MANAGER_BASE_URL: ${SSO_MANAGER_BASE_URL:-http://localhost:28477}
+      AGENT_API_KEY: ${AGENT_API_KEY:-dev-agent-key}
+      SECURITY_ALLOW_DEFAULT_SECRETS: ${SECURITY_ALLOW_DEFAULT_SECRETS:-true}
+      CLICKHOUSE_ENABLED: ${CLICKHOUSE_ENABLED:-true}
+      CLICKHOUSE_READ_ENABLED: ${CLICKHOUSE_READ_ENABLED:-true}
+      CLICKHOUSE_URL: ${CLICKHOUSE_URL:-http://clickhouse:8123}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE:-agent_retry_cloud}
+      OTEL_INGEST_ENABLED: ${OTEL_INGEST_ENABLED:-true}
+      OTEL_COWORK_MAPPING_ENABLED: ${OTEL_COWORK_MAPPING_ENABLED:-true}
+      MCP_TOKEN_EXPIRATION_DAYS: ${MCP_TOKEN_EXPIRATION_DAYS:-7}
+      RETENTION_TASK_EVENTS_DAYS: ${RETENTION_TASK_EVENTS_DAYS:-90}
+    ports:
+      - "${MANAGER_PORT:-28477}:${MANAGER_PORT:-28477}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:${MANAGER_PORT:-28477}/api/v1/auth/sso/status >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/frontend/Dockerfile
+    image: retrysight/tier-cloud-frontend:local
+    container_name: retrysight-cloud-frontend
+    environment:
+      MANAGER_PORT: ${MANAGER_PORT:-28477}
+    ports:
+      - "${FRONTEND_PORT:-8086}:80"
+    depends_on:
+      manager:
+        condition: service_healthy
+
+  agent:
+    build:
+      context: .
+      dockerfile: infra/agent/Dockerfile
+    image: retrysight/tier-cloud-agent:local
+    container_name: retrysight-cloud-agent
+    profiles:
+      - agent
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker,tier-cloud}
+      MANAGER_PORT: ${MANAGER_PORT:-28477}
+      AGENT_MANAGER_URL: ${AGENT_MANAGER_URL:-http://manager:28477}
+      AGENT_MANAGER_API_KEY: ${AGENT_API_KEY:-dev-agent-key}
+    volumes:
+      - ${HOME}/.cursor:/home/collector/.cursor:ro
+      - ${HOME}/.claude:/home/collector/.claude:ro
+      - ${HOME}/.codex:/home/collector/.codex:ro
+      - ${HOME}/.kiro:/home/collector/.kiro:ro
+      - ${HOME}/.copilot:/home/collector/.copilot:ro
+      - tier_cloud_buffer:/home/collector/.agent-retry
+      - ./config/agent/config.yaml:/home/collector/.agent-retry/config.yaml:ro
+    depends_on:
+      manager:
+        condition: service_healthy
+
+volumes:
+  tier_cloud_pgdata:
+  tier_cloud_chdata:
+  tier_cloud_minio:
+  tier_cloud_buffer:

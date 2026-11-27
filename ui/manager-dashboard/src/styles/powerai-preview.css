@@ -1,0 +1,680 @@
+/*
+ * Copyright (c) 2026 Arka Prava Ghosh
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* PowerAI Astro template — visual port for RetrySight preview */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+.powerai-marketing {
+  --pa-primary: #8f2ffe;
+  --pa-secondary: #df53fe;
+  --pa-body: #0e0912;
+  --pa-card: #151019;
+  --pa-dark: #121212;
+  --pa-dark-gray: #292929;
+  --pa-text: #ffffff;
+  --pa-text-muted: #b9b7ba;
+  --pa-border: rgba(255, 255, 255, 0.06);
+  --pa-border-strong: rgba(255, 255, 255, 0.12);
+  --pa-max: 1300px;
+  --pa-font: 'Inter', system-ui, sans-serif;
+
+  font-family: var(--pa-font);
+  background: var(--pa-body);
+  color: var(--pa-text-muted);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.powerai-marketing *,
+.powerai-marketing *::before,
+.powerai-marketing *::after {
+  box-sizing: border-box;
+}
+
+.powerai-marketing h1,
+.powerai-marketing h2,
+.powerai-marketing h3 {
+  color: var(--pa-text);
+  font-weight: 600;
+  margin: 0;
+}
+
+.powerai-marketing .pa-gradient-text {
+  background: linear-gradient(
+    270deg,
+    #fff 2.46%,
+    #bc88ff 50.39%,
+    #fff 98.32%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.powerai-marketing .pa-gradient-label {
+  background: linear-gradient(90deg, var(--pa-primary) 0%, var(--pa-secondary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.powerai-marketing .pa-glow {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(900px, 120vw);
+  height: 420px;
+  background: radial-gradient(
+    163% 100% at 50% 100%,
+    rgba(232, 124, 255, 0.28) 0%,
+    rgba(25, 20, 29, 0) 55%
+  );
+  z-index: 0;
+}
+
+.powerai-marketing .pa-center-line {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 100%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.powerai-marketing .pa-preview-banner {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  border-bottom: 1px solid var(--pa-border);
+  background: rgba(14, 9, 18, 0.92);
+}
+
+.powerai-marketing .pa-preview-banner a {
+  color: var(--pa-text-muted);
+  text-decoration: none;
+}
+
+.powerai-marketing .pa-preview-banner a:hover {
+  color: var(--pa-text);
+}
+
+.powerai-marketing .pa-preview-banner .pa-active {
+  background: linear-gradient(90deg, var(--pa-primary), var(--pa-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 600;
+}
+
+.powerai-marketing .pa-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--pa-border);
+  background: rgba(14, 9, 18, 0.85);
+  backdrop-filter: blur(16px);
+}
+
+.powerai-marketing .pa-header-inner {
+  max-width: var(--pa-max);
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 4rem;
+  border-left: 1px solid var(--pa-border);
+  border-right: 1px solid var(--pa-border);
+}
+
+.powerai-marketing .pa-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  text-decoration: none;
+  color: var(--pa-text);
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.powerai-marketing .pa-nav {
+  display: none;
+  gap: 1.75rem;
+}
+
+@media (min-width: 768px) {
+  .powerai-marketing .pa-nav {
+    display: flex;
+  }
+}
+
+.powerai-marketing .pa-nav a {
+  font-size: 0.875rem;
+  color: var(--pa-text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.powerai-marketing .pa-nav a:hover {
+  color: var(--pa-text);
+}
+
+.powerai-marketing .pa-header-actions {
+  display: flex;
+  gap: 0.625rem;
+}
+
+.powerai-marketing .pa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--pa-font);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter 0.2s, transform 0.15s;
+}
+
+.powerai-marketing .pa-btn:hover {
+  filter: brightness(1.08);
+}
+
+.powerai-marketing .pa-btn-dark {
+  background: linear-gradient(180deg, #0e0912 0%, #22162b 100%);
+  border-color: var(--pa-border);
+  color: var(--pa-text);
+}
+
+.powerai-marketing .pa-btn-primary {
+  background: linear-gradient(90deg, var(--pa-primary) 25%, var(--pa-secondary) 100%);
+  color: #fff;
+  border-color: var(--pa-primary);
+}
+
+.powerai-marketing .pa-main-wrap {
+  position: relative;
+  z-index: 1;
+  border-bottom: 1px solid var(--pa-border);
+}
+
+.powerai-marketing .pa-container {
+  max-width: var(--pa-max);
+  margin: 0 auto;
+  padding: 0 1rem;
+  border-left: 1px solid var(--pa-border);
+  border-right: 1px solid var(--pa-border);
+}
+
+.powerai-marketing .pa-hero {
+  position: relative;
+  padding: 4rem 1rem 2rem;
+  text-align: center;
+}
+
+.powerai-marketing .pa-hero-badge-wrap {
+  display: inline-block;
+  padding: 1px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--pa-primary), var(--pa-secondary));
+  margin-bottom: 1.25rem;
+}
+
+.powerai-marketing .pa-hero-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.375rem 1rem 0.375rem 0.375rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--pa-dark) 50%, var(--pa-dark-gray) 100%);
+}
+
+.powerai-marketing .pa-avatar-stack {
+  display: flex;
+}
+
+.powerai-marketing .pa-avatar {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--pa-secondary);
+  margin-right: -0.5rem;
+  background: linear-gradient(135deg, var(--pa-primary), var(--pa-secondary));
+  font-size: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.powerai-marketing .pa-hero h1 {
+  font-size: clamp(2.25rem, 6vw, 3.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.25rem;
+}
+
+.powerai-marketing .pa-hero-lead {
+  font-size: 1.0625rem;
+  max-width: 36rem;
+  margin: 0 auto 2rem;
+  color: var(--pa-text-muted);
+}
+
+.powerai-marketing .pa-hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.875rem;
+  margin-bottom: 3rem;
+}
+
+.powerai-marketing .pa-hero-shot {
+  margin-top: 2rem;
+  padding: 1.25rem;
+  background: rgba(18, 18, 18, 0.45);
+  backdrop-filter: blur(24px);
+  border-top: 1px solid var(--pa-border);
+}
+
+.powerai-marketing .pa-dash {
+  border-radius: 0.75rem;
+  border: 1px solid var(--pa-border-strong);
+  background: var(--pa-card);
+  overflow: hidden;
+  text-align: left;
+}
+
+.powerai-marketing .pa-dash-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--pa-border);
+  font-size: 0.75rem;
+}
+
+.powerai-marketing .pa-dash-top strong {
+  color: var(--pa-text);
+}
+
+.powerai-marketing .pa-dash-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+@media (min-width: 768px) {
+  .powerai-marketing .pa-dash-body {
+    grid-template-columns: 1.4fr 1fr;
+  }
+}
+
+.powerai-marketing .pa-dash-main {
+  padding: 1rem;
+  border-right: 1px solid var(--pa-border);
+}
+
+.powerai-marketing .pa-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.625rem;
+  margin-bottom: 0.875rem;
+}
+
+.powerai-marketing .pa-metric {
+  padding: 0.875rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--pa-border);
+  background: linear-gradient(
+    158deg,
+    rgba(255, 255, 255, 0.06) 14%,
+    rgba(255, 255, 255, 0.01) 70%
+  );
+}
+
+.powerai-marketing .pa-metric-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pa-text-muted);
+}
+
+.powerai-marketing .pa-metric-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--pa-text);
+  margin-top: 0.25rem;
+}
+
+.powerai-marketing .pa-metric-delta {
+  font-size: 0.6875rem;
+  margin-top: 0.125rem;
+  color: #40d294;
+}
+
+.powerai-marketing .pa-chart {
+  height: 4.5rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--pa-border);
+  background: linear-gradient(180deg, rgba(143, 47, 254, 0.2), transparent);
+  position: relative;
+  overflow: hidden;
+}
+
+.powerai-marketing .pa-chart-bars {
+  position: absolute;
+  inset: auto 0.75rem 0.75rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.375rem;
+  height: 2rem;
+}
+
+.powerai-marketing .pa-chart-bar {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  background: rgba(143, 47, 254, 0.35);
+}
+
+.powerai-marketing .pa-chart-bar:last-child {
+  background: linear-gradient(180deg, var(--pa-secondary), var(--pa-primary));
+}
+
+.powerai-marketing .pa-side-panel {
+  padding: 1rem;
+  font-size: 0.6875rem;
+}
+
+.powerai-marketing .pa-side-title {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pa-text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.powerai-marketing .pa-event {
+  padding: 0.375rem 0;
+  border-bottom: 1px solid var(--pa-border);
+  color: var(--pa-text-muted);
+}
+
+.powerai-marketing .pa-event:last-child {
+  border-bottom: none;
+}
+
+.powerai-marketing .pa-event .tag {
+  color: var(--pa-secondary);
+  font-weight: 600;
+}
+
+.powerai-marketing .pa-section {
+  padding: 4rem 1rem;
+  border-top: 1px solid var(--pa-border);
+}
+
+.powerai-marketing .pa-section-head {
+  text-align: center;
+  max-width: 38rem;
+  margin: 0 auto 2.5rem;
+}
+
+.powerai-marketing .pa-section-head h2 {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  margin-bottom: 0.625rem;
+}
+
+.powerai-marketing .pa-stats {
+  display: grid;
+  gap: 1.5rem;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .powerai-marketing .pa-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.powerai-marketing .pa-stat-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+  background: linear-gradient(90deg, var(--pa-primary), var(--pa-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.powerai-marketing .pa-stat-label {
+  font-size: 0.8125rem;
+  margin-top: 0.5rem;
+  color: var(--pa-text-muted);
+}
+
+.powerai-marketing .pa-features {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .powerai-marketing .pa-features {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.powerai-marketing .pa-feature {
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid var(--pa-border);
+  background: var(--pa-card);
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.powerai-marketing .pa-feature:hover {
+  border-color: rgba(143, 47, 254, 0.35);
+  transform: translateY(-2px);
+}
+
+.powerai-marketing .pa-feature-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, rgba(143, 47, 254, 0.25), rgba(223, 83, 254, 0.15));
+  font-size: 1.125rem;
+}
+
+.powerai-marketing .pa-feature h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.powerai-marketing .pa-feature p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--pa-text-muted);
+}
+
+.powerai-marketing .pa-integrations {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.powerai-marketing .pa-integration {
+  padding: 0.625rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--pa-border);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--pa-text);
+}
+
+.powerai-marketing .pa-pricing-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .powerai-marketing .pa-pricing-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.powerai-marketing .pa-price-card {
+  padding: 1.75rem 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid var(--pa-border);
+  background: var(--pa-card);
+  display: flex;
+  flex-direction: column;
+}
+
+.powerai-marketing .pa-price-card.featured {
+  border-color: rgba(143, 47, 254, 0.5);
+  background: linear-gradient(180deg, rgba(143, 47, 254, 0.12), var(--pa-card));
+  box-shadow: 0 0 40px rgba(143, 47, 254, 0.12);
+}
+
+.powerai-marketing .pa-price-name {
+  font-size: 0.875rem;
+  color: var(--pa-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.powerai-marketing .pa-price-amount {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--pa-text);
+}
+
+.powerai-marketing .pa-price-card ul {
+  flex: 1;
+  margin: 1.25rem 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.powerai-marketing .pa-price-card li {
+  padding: 0.375rem 0;
+  color: var(--pa-text-muted);
+  padding-left: 1.125rem;
+  position: relative;
+}
+
+.powerai-marketing .pa-price-card li::before {
+  content: '✦';
+  position: absolute;
+  left: 0;
+  color: var(--pa-secondary);
+  font-size: 0.625rem;
+}
+
+.powerai-marketing .pa-testimonial {
+  max-width: 36rem;
+  margin: 0 auto;
+  text-align: center;
+  padding: 2rem;
+  border-radius: 1rem;
+  border: 1px solid var(--pa-border);
+  background: linear-gradient(
+    158deg,
+    rgba(255, 255, 255, 0.05) 14%,
+    rgba(255, 255, 255, 0.01) 70%
+  );
+}
+
+.powerai-marketing .pa-testimonial blockquote {
+  margin: 0 0 1rem;
+  font-size: 1.0625rem;
+  color: var(--pa-text);
+  font-style: italic;
+}
+
+.powerai-marketing .pa-testimonial cite {
+  font-size: 0.8125rem;
+  color: var(--pa-text-muted);
+  font-style: normal;
+}
+
+.powerai-marketing .pa-cta {
+  text-align: center;
+  padding: 5rem 1rem 6rem;
+  border-top: 1px solid var(--pa-border);
+  position: relative;
+}
+
+.powerai-marketing .pa-cta h2 {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  max-width: 22ch;
+  margin: 0 auto 1rem;
+}
+
+.powerai-marketing .pa-cta p {
+  max-width: 32rem;
+  margin: 0 auto 1.75rem;
+  color: var(--pa-text-muted);
+}
+
+.powerai-marketing .pa-footer-title {
+  margin-top: 3rem;
+  font-size: clamp(3rem, 14vw, 8rem);
+  font-weight: 700;
+  line-height: 0.9;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  background: linear-gradient(0deg, #0e0912 23%, rgba(255, 255, 255, 0.08) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  user-select: none;
+}
+
+.powerai-marketing .pa-footer {
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--pa-text-muted);
+  border-top: 1px solid var(--pa-border);
+}
+
+html.powerai-preview-active body {
+  margin: 0;
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .powerai-marketing .pa-feature:hover {
+    transform: none;
+  }
+}

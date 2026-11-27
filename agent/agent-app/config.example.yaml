@@ -1,0 +1,45 @@
+# Copyright (c) 2026 Arka Prava Ghosh
+# SPDX-License-Identifier: Apache-2.0
+
+# Example agent configuration (Spring Boot property tree).
+# Copy to ~/.agent-retry/config.yaml — the agent imports it via:
+#   spring.config.import=optional:file:${user.home}/.agent-retry/config.yaml
+#
+# You can also override the same keys with env vars / JVM -D properties, e.g.:
+#   AGENT_MANAGER_API_KEY, AGENT_API_KEY, AGENT_MANAGER_URL, MANAGER_PORT, agent.manager.url
+
+agent:
+  manager:
+    url: http://localhost:28477  # or set MANAGER_PORT / AGENT_MANAGER_URL env
+    api-key: dev-agent-key
+    # Optional corporate proxy (otherwise HTTP_PROXY / HTTPS_PROXY are honored):
+    # proxy-host: proxy.corp.example
+    # proxy-port: 8080
+    # proxy-username: user
+    # proxy-password: secret
+
+  identity:
+    id-file: ${user.home}/.agent-retry/agent-id
+
+  upload:
+    batch-interval-seconds: 10
+    max-batch-size: 100
+    buffer-path: ${user.home}/.agent-retry/buffer.db
+    # Offline SQLite buffer caps (drop oldest when exceeded)
+    buffer-max-rows: 50000
+    buffer-max-age-hours: 168
+    buffer-max-bytes: 268435456
+
+  collectors:
+    - type: claude_code
+      enabled: true
+      watch-path: ~/.claude/projects
+    - type: codex
+      enabled: true
+      watch-path: ~/.codex/sessions
+    - type: cursor
+      enabled: true
+      watch-path: ~/.cursor/projects
+
+  privacy:
+    store-full-prompts: false

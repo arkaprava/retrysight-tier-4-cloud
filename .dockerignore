@@ -1,0 +1,12 @@
+**/target
+!manager/manager-app/target/
+!manager/manager-app/target/manager-app-*.jar
+!agent/agent-app/target/
+!agent/agent-app/target/agent-app-*.jar
+**/node_modules
+**/.git
+**/.idea
+**/.cursor
+**/*.iml
+ui/manager-dashboard/dist
+.agent-retry

@@ -1,0 +1,182 @@
+# Copyright (c) 2026 Arka Prava Ghosh
+# SPDX-License-Identifier: Apache-2.0
+
+spring:
+  application:
+    name: agent-retry-collector
+  config:
+    # Optional operator overrides (Spring property tree under `agent:`). See config.example.yaml.
+    import: optional:file:${user.home}/.agent-retry/config.yaml
+  main:
+    web-application-type: none
+  task:
+    scheduling:
+      pool:
+        size: 4
+
+agent:
+  platform:
+    installation-tier: TIER_4_CLOUD
+    auto-discovery: true
+    features:
+      phase1-foundation: true
+      phase2-collectors: true
+      phase3-yaml-registry: true
+      phase4-push-ingest: false
+      git-context-capture: true
+      git-context-query: true
+      git-context-advanced: true
+      git-context-enterprise: true
+  manager:
+    url: ${AGENT_MANAGER_URL:http://localhost:${MANAGER_PORT:28477}}
+    api-key: ${AGENT_MANAGER_API_KEY:${AGENT_API_KEY:dev-agent-key}}
+    # Optional explicit proxy (else HTTP_PROXY / HTTPS_PROXY env):
+    # proxy-host: proxy.example.com
+    # proxy-port: 8080
+  identity:
+    id-file: ${user.home}/.agent-retry/agent-id
+    lock-file: ${user.home}/.agent-retry/agent.lock
+  discovery:
+    recency-days: 30
+    refresh-interval-seconds: 300
+  session:
+    idle-complete-minutes: 30
+  cli:
+    command: run
+  upload:
+    # Upload often; scan slightly less often so heavy collectors don't starve Live.
+    batch-interval-seconds: 2
+    scan-interval-seconds: 3
+    max-batch-size: 500
+    buffer-path: ${user.home}/.agent-retry/buffer.db
+    buffer-max-rows: 50000
+    buffer-max-age-hours: 168
+    buffer-max-bytes: 268435456
+  privacy:
+    store-full-prompts: false
+  collectors:
+    - type: claude_code
+      enabled: true
+      watch-path: ~/.claude/projects
+    - type: codex
+      enabled: true
+      watch-path: ~/.codex/sessions
+    - type: cursor
+      enabled: true
+      watch-path: ~/.cursor/projects
+    - type: kiro
+      enabled: true
+      watch-path: ~/.kiro/sessions/cli
+    - type: copilot
+      enabled: true
+      watch-path: ~/.copilot/session-state
+    - type: warp
+      enabled: true
+      watch-path: ~/Library/Group Containers/2BBY89MBSN.dev.warp/Library/Application Support/dev.warp.Warp-Stable/warp.sqlite
+    - type: windsurf
+      enabled: false
+      watch-path: ~/.codeium/windsurf/cascade
+    - type: continue
+      enabled: false
+      watch-path: ~/.continue/sessions
+    - type: cline
+      enabled: false
+      watch-path: ~/.cline/logs
+    - type: aider
+      enabled: false
+      watch-path: ~/.aider
+    - type: opencode
+      enabled: false
+      watch-path: ~/.opencode/sessions
+    - type: kiro_ide
+      enabled: false
+      watch-path: ~/Library/Application Support/Kiro/User/globalStorage/kiro.kiroagent
+
+logging:
+  level:
+    com.agentretry: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+agent:
+  manager:
+    url: ${AGENT_MANAGER_URL:http://manager:${MANAGER_PORT:28477}}
+    api-key: ${AGENT_MANAGER_API_KEY:dev-agent-key}
+  upload:
+    buffer-path: /home/collector/.agent-retry/buffer.db
+  collectors:
+    - type: claude_code
+      enabled: true
+      watch-path: /home/collector/.claude/projects
+    - type: codex
+      enabled: true
+      watch-path: /home/collector/.codex/sessions
+    - type: cursor
+      enabled: true
+      watch-path: /home/collector/.cursor/projects
+    - type: kiro
+      enabled: true
+      watch-path: /home/collector/.kiro/sessions/cli
+    - type: copilot
+      enabled: true
+      watch-path: /home/collector/.copilot/session-state
+    - type: warp
+      enabled: false
+      watch-path: /home/collector/.local/state/warp-terminal/warp.sqlite
+
+---
+spring:
+  config:
+    activate:
+      on-profile: tier-core
+agent:
+  platform:
+    installation-tier: TIER_1_CORE
+    features:
+      phase2-collectors: false
+      phase3-yaml-registry: false
+      phase4-push-ingest: false
+      git-context-capture: false
+      git-context-query: false
+      git-context-advanced: false
+      git-context-enterprise: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: tier-analytics
+agent:
+  platform:
+    installation-tier: TIER_2_ANALYTICS
+    features:
+      phase3-yaml-registry: false
+      phase4-push-ingest: false
+      git-context-query: false
+      git-context-advanced: false
+      git-context-enterprise: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: tier-integration
+agent:
+  platform:
+    installation-tier: TIER_3_INTEGRATION
+    features:
+      phase4-push-ingest: false
+      git-context-enterprise: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: tier-cloud
+agent:
+  platform:
+    installation-tier: TIER_4_CLOUD

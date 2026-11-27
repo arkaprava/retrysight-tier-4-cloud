@@ -1,0 +1,56 @@
+# Copyright (c) 2026 Arka Prava Ghosh
+# SPDX-License-Identifier: Apache-2.0
+
+# Manager schema migrations (Liquibase). Former Flyway V1–V11.
+databaseChangeLog:
+  - include:
+      file: changes/001-init.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/002-auth.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/003-agent-user-info.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/004-sso.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/005-cost-tracking.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/006-task-git-context.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/007-unique-task-session.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/008-api-keys-meta.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/009-tenancy-alerts-retention.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/010-eval-scorecards.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/011-archive-performance-rollups.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/012-api-key-grace.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/013-portable-rollup-day.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/014-evaluations.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/015-eval-phases.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/016-pattern-relevance.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/017-pattern-window-days.sql
+      relativeToChangelogFile: true

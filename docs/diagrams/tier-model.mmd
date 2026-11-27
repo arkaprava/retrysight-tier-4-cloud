@@ -1,0 +1,7 @@
+flowchart BT
+  T4["TIER_4_CLOUD\nPush ingest, object archive, git enterprise"]
+  T3["TIER_3_INTEGRATION\nMCP, SSO tools API, contract apply"]
+  T2["TIER_2_ANALYTICS\nCost, reports, collectors, archive local"]
+  T1["TIER_1_CORE\nFoundation, ingest, dashboard, retention"]
+
+  T1 --> T2 --> T3 --> T4

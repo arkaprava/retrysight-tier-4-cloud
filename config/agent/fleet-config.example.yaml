@@ -1,0 +1,38 @@
+# RetrySight fleet agent — packaged install defaults
+# Copy to ~/.agent-retry/config.yaml (or use: retrysight-agent configure)
+
+agent:
+  platform:
+    installation-tier: TIER_4_CLOUD
+    auto-discovery: true
+
+  manager:
+    url: https://manager.example.com
+    api-key: CHANGE_ME
+
+  user:
+    email: developer@example.com
+
+  discovery:
+    recency-days: 30
+    refresh-interval-seconds: 300
+
+  session:
+    idle-complete-minutes: 30
+
+  identity:
+    id-file: ${user.home}/.agent-retry/agent-id
+    lock-file: ${user.home}/.agent-retry/agent.lock
+
+  upload:
+    buffer-path: ${user.home}/.agent-retry/buffer.db
+    # Offline buffer caps — see docs/AGENT_BUFFER_POLICY.md
+    buffer-max-rows: 50000
+    buffer-max-age-hours: 168
+    buffer-max-bytes: 268435456
+
+  # Leave empty to auto-enable collectors with recent logs.
+  collectors: []
+
+  privacy:
+    store-full-prompts: false

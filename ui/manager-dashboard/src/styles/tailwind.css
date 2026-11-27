@@ -1,0 +1,42 @@
+/*
+ * Copyright (c) 2026 Arka Prava Ghosh
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .analytics-surface {
+    @apply font-sans;
+  }
+
+  .analytics-metric-grid {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    align-items: stretch;
+  }
+
+  .analytics-chart-grid {
+    @apply grid gap-4;
+  }
+
+  @media (min-width: 960px) {
+    .analytics-chart-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .trend-breakdown-toggle {
+    @apply inline-flex flex-wrap gap-1 rounded-full border border-tremor-border bg-tremor-background-subtle p-0.5 dark:border-dark-tremor-border dark:bg-dark-tremor-background-subtle;
+  }
+
+  .trend-breakdown-toggle button {
+    @apply rounded-full border-0 bg-transparent px-2.5 py-1.5 text-xs font-semibold text-tremor-content hover:text-tremor-content-strong dark:text-dark-tremor-content dark:hover:text-dark-tremor-content-strong;
+  }
+
+  .trend-breakdown-toggle button.is-active {
+    @apply bg-tremor-background text-tremor-content-strong shadow-sm dark:bg-dark-tremor-background dark:text-dark-tremor-content-strong;
+  }
+}

@@ -1,0 +1,11 @@
+# Copyright (c) 2026 Arka Prava Ghosh
+# SPDX-License-Identifier: Apache-2.0
+
+# Example Phase-3 YAML registry definition for GenericYamlCollector.
+# Point an agent collector entry at this file:
+#   - type: yaml
+#     enabled: true
+#     watch-path: ./config/collectors/example-yaml-registry.yaml
+watchPath: ~/.continue/sessions
+fileExtension: .jsonl
+sourceTool: CONTINUE

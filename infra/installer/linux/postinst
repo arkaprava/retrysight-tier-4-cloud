@@ -1,0 +1,73 @@
+#!/bin/bash
+# Copyright (c) 2026 Arka Prava Ghosh
+# SPDX-License-Identifier: Apache-2.0
+# jpackage Linux DEB postinst (Debian maintainer script name).
+# Self-contained: jpackage control.tar only packs postinst/preinst/prerm/postrm,
+# so this file must not exec a sibling postinstall.
+# Register a user systemd unit globally so the collector starts at login
+# (and with linger, after reboot without login).
+set -euo pipefail
+
+UNIT_NAME="retrysight-agent.service"
+UNIT_DIR="/usr/lib/systemd/user"
+UNIT_PATH="${UNIT_DIR}/${UNIT_NAME}"
+
+# jpackage default install layout for --linux-package-name retrysight-agent
+LAUNCHER=""
+for candidate in \
+  "/opt/retrysight-agent/bin/RetrySightAgent" \
+  "/opt/RetrySightAgent/bin/RetrySightAgent" \
+  "/usr/lib/retrysight-agent/bin/RetrySightAgent" \
+  "/usr/bin/RetrySightAgent"
+do
+  if [[ -x "${candidate}" ]]; then
+    LAUNCHER="${candidate}"
+    break
+  fi
+done
+
+if [[ -z "${LAUNCHER}" ]]; then
+  echo "RetrySightAgent launcher not found; skipping auto-start registration" >&2
+  exit 0
+fi
+
+mkdir -p "${UNIT_DIR}"
+cat > "${UNIT_PATH}" <<EOF
+[Unit]
+Description=RetrySight Collector Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=${LAUNCHER}
+Restart=on-failure
+RestartSec=5
+Environment=SPRING_PROFILES_ACTIVE=__SPRING_PROFILE__
+
+[Install]
+WantedBy=default.target
+EOF
+chmod 644 "${UNIT_PATH}"
+
+# Make the user unit available to all accounts at login.
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload >/dev/null 2>&1 || true
+  systemctl --global enable "${UNIT_NAME}" >/dev/null 2>&1 || true
+
+  # Enable immediately for the installing user when invoked via sudo.
+  TARGET_USER="${SUDO_USER:-${USER:-}}"
+  if [[ -n "${TARGET_USER}" && "${TARGET_USER}" != "root" ]]; then
+    loginctl enable-linger "${TARGET_USER}" >/dev/null 2>&1 || true
+    # systemctl -M requires systemd 248+; fall back to runuser.
+    if systemctl -M "${TARGET_USER}@" --user enable --now "${UNIT_NAME}" >/dev/null 2>&1; then
+      :
+    else
+      runuser -l "${TARGET_USER}" -c "systemctl --user daemon-reload; systemctl --user enable --now ${UNIT_NAME}" \
+        >/dev/null 2>&1 || true
+    fi
+  fi
+fi
+
+echo "Registered ${UNIT_NAME} (user service; starts at login)."
+exit 0

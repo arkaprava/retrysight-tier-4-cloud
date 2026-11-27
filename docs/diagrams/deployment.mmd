@@ -1,0 +1,21 @@
+flowchart TB
+  subgraph docker["Docker Compose (infra/)"]
+    FE["frontend :8080\nnginx + static UI"]
+    MG["manager :28477\nSpring Boot"]
+    PG[("postgres :5432")]
+    FE -->|proxy /graphql /api| MG
+    MG --> PG
+  end
+
+  subgraph host["Developer host (optional)"]
+    AG["agent-app\nlog collectors"]
+    AG -->|ingest| MG
+  end
+
+  subgraph profiles["Spring profiles"]
+    P1["default / dev-h2"]
+    P2["docker"]
+    P3["prod + tier-*"]
+  end
+
+  MG --- profiles

@@ -1,0 +1,25 @@
+flowchart LR
+  subgraph dev["Developer workstation"]
+    IDE["IDE / CLI tools\n(Cursor, Claude, Codex, …)"]
+    AGT["Agent collector\n(Spring Boot)"]
+    IDE -->|local logs| AGT
+  end
+
+  subgraph platform["RetrySight platform"]
+    MGR["Manager\nGraphQL + REST"]
+    PG[("PostgreSQL")]
+    UI["Manager dashboard\n(Vite + React)"]
+    MGR --- PG
+    UI -->|GraphQL / REST| MGR
+  end
+
+  subgraph optional["Optional"]
+    CH[("ClickHouse")]
+    OLL["Ollama\n(local LLM)"]
+    MCP["MCP server\n(IDE plugin)"]
+  end
+
+  AGT -->|"REST ingest\n(X-Agent-Api-Key)"| MGR
+  MGR -.->|analytics dual-write| CH
+  MGR -.->|Insights chat| OLL
+  MCP -.->|MCP token + GraphQL| MGR
