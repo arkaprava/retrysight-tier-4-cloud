@@ -62,7 +62,7 @@ Native installers (Windows `.msi`, macOS `.pkg`, Linux `.deb`) and the agent jar
 |-----------|-------|---------|
 | PostgreSQL 16 | `retrysight/tier-cloud-postgres:local` | OLTP |
 | ClickHouse 24 | `clickhouse/clickhouse-server:24.8-alpine` | Analytics |
-| MinIO | `minio/minio:latest` | S3-compatible archive (dev) |
+| MinIO | `cgr.dev/chainguard/minio:latest-dev` | S3-compatible archive (dev) |
 | Manager / Frontend / Agent | `retrysight/tier-cloud-*:local` | — |
 
 ### Quick start

@@ -35,6 +35,9 @@ clickhouse:
   storage: 20Gi
 
 minio:
+  # MinIO no longer publishes community images to Docker Hub or quay.io; Chainguard's free image
+  # works as a drop-in. Point this at your own registry for air-gapped installs.
+  image: cgr.dev/chainguard/minio:latest
   enabled: true
   rootUser: minioadmin
   rootPassword: ""  # empty = generated

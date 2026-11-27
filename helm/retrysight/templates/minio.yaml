@@ -41,7 +41,7 @@ spec:
     spec:
       containers:
         - name: minio
-          image: minio/minio:latest
+          image: {{ .Values.minio.image | quote }}
           imagePullPolicy: IfNotPresent
           args:
             - server
